@@ -814,26 +814,39 @@ bool Adafruit_VL53L5_Lite::setResolution(uint8_t res) {
     return false;
   }
 
+  // Mirrors vl53l5cx_set_resolution: read-modify-write DSS and zone config
+  uint8_t dss[16], zone[8];
+
+  if (!_dciRead(VL53L5_DCI_DSS_CONFIG, dss, 16)) {
+    return false;
+  }
+  if (!_dciRead(VL53L5_DCI_ZONE_CONFIG, zone, 8)) {
+    return false;
+  }
+
   if (res == VL53L5_RESOLUTION_4X4) {
-    uint8_t dss[] = {0x0F, 0x04, 0x04, 0x17, 0x08, 0x10, 0x10, 0x07,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    if (!_dciWrite(dss, VL53L5_DCI_DSS_CONFIG, 16)) {
-      return false;
-    }
-    uint8_t zone[] = {0x04, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
-    if (!_dciWrite(zone, VL53L5_DCI_ZONE_CONFIG, 8)) {
-      return false;
-    }
+    dss[0x04] = 64;
+    dss[0x06] = 64;
+    dss[0x09] = 4;
+    zone[0x00] = 4;
+    zone[0x01] = 4;
+    zone[0x04] = 8;
+    zone[0x05] = 8;
   } else {
-    uint8_t dss[] = {0x1F, 0x04, 0x04, 0x47, 0x08, 0x10, 0x10, 0x07,
-                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    if (!_dciWrite(dss, VL53L5_DCI_DSS_CONFIG, 16)) {
-      return false;
-    }
-    uint8_t zone[] = {0x08, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00};
-    if (!_dciWrite(zone, VL53L5_DCI_ZONE_CONFIG, 8)) {
-      return false;
-    }
+    dss[0x04] = 16;
+    dss[0x06] = 16;
+    dss[0x09] = 1;
+    zone[0x00] = 8;
+    zone[0x01] = 8;
+    zone[0x04] = 4;
+    zone[0x05] = 4;
+  }
+
+  if (!_dciWrite(dss, VL53L5_DCI_DSS_CONFIG, 16)) {
+    return false;
+  }
+  if (!_dciWrite(zone, VL53L5_DCI_ZONE_CONFIG, 8)) {
+    return false;
   }
 
   _sendOffsetData(res);
@@ -857,19 +870,18 @@ bool Adafruit_VL53L5_Lite::setRangingFrequency(uint8_t hz) {
   if (!_initialized) {
     return false;
   }
-  uint32_t freq = hz;
-  return _dciReplace(VL53L5_DCI_FREQ_HZ, 4, (uint8_t *)&freq, 4, 0);
+  return _dciReplace(VL53L5_DCI_FREQ_HZ, 4, &hz, 1, 0x01);
 }
 
 uint8_t Adafruit_VL53L5_Lite::getRangingFrequency() {
   if (!_initialized) {
     return 0;
   }
-  uint32_t freq = 0;
-  if (!_dciRead(VL53L5_DCI_FREQ_HZ, (uint8_t *)&freq, 4)) {
+  uint8_t buf[4] = {0};
+  if (!_dciRead(VL53L5_DCI_FREQ_HZ, buf, 4)) {
     return 0;
   }
-  return (uint8_t)freq;
+  return buf[0x01];
 }
 
 bool Adafruit_VL53L5_Lite::setIntegrationTime(uint32_t ms) {
@@ -945,12 +957,32 @@ bool Adafruit_VL53L5_Lite::setRangingMode(uint8_t mode) {
   if (!_initialized) {
     return false;
   }
+  // Mirrors vl53l5cx_set_ranging_mode
   uint8_t buf[8];
   if (!_dciRead(VL53L5_DCI_RANGING_MODE, buf, 8)) {
     return false;
   }
-  buf[0] = mode;
-  return _dciWrite(buf, VL53L5_DCI_RANGING_MODE, 8);
+
+  uint32_t single_range;
+  switch (mode) {
+  case VL53L5_RANGING_MODE_CONTINUOUS:
+    buf[0x01] = 0x01;
+    buf[0x03] = 0x03;
+    single_range = 0x00;
+    break;
+  case VL53L5_RANGING_MODE_AUTONOMOUS:
+    buf[0x01] = 0x03;
+    buf[0x03] = 0x02;
+    single_range = 0x01;
+    break;
+  default:
+    return false;
+  }
+
+  if (!_dciWrite(buf, VL53L5_DCI_RANGING_MODE, 8)) {
+    return false;
+  }
+  return _dciWrite((uint8_t *)&single_range, VL53L5_DCI_SINGLE_RANGE, 4);
 }
 
 uint8_t Adafruit_VL53L5_Lite::getRangingMode() {
@@ -961,7 +993,9 @@ uint8_t Adafruit_VL53L5_Lite::getRangingMode() {
   if (!_dciRead(VL53L5_DCI_RANGING_MODE, buf, 8)) {
     return 0;
   }
-  return buf[0];
+  // ST stores mode encoding in buf[0x01]: 0x01=continuous, 0x03=autonomous
+  return (buf[0x01] == 0x03) ? VL53L5_RANGING_MODE_AUTONOMOUS
+                              : VL53L5_RANGING_MODE_CONTINUOUS;
 }
 
 bool Adafruit_VL53L5_Lite::setPowerMode(uint8_t mode) {
