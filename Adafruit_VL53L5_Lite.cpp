@@ -11,16 +11,11 @@
 #include "Adafruit_VL53L5_Lite.h"
 
 // Block header indices for output data parsing
-#define BH_IDX_METADATA 0xD
-#define BH_IDX_AMBIENT_RATE 0x0
-#define BH_IDX_NB_TARGET_DETECTED 0x1
-#define BH_IDX_SPAD_COUNT 0x3
-#define BH_IDX_SIGNAL_RATE 0x4
-#define BH_IDX_RANGE_SIGMA 0x6
-#define BH_IDX_DISTANCE 0x5
-#define BH_IDX_REFLECTANCE 0x7
-#define BH_IDX_TARGET_STATUS 0x8
-#define BH_IDX_MOTION 0x9
+// Block header IDX values for output data parsing (from ST ULD)
+#define VL53L5CX_METADATA_IDX 0x54B4U
+#define VL53L5CX_DISTANCE_IDX 0xDF44U
+#define VL53L5CX_TARGET_STATUS_IDX 0xE084U
+#define VL53L5CX_RANGE_SIGMA_MM_IDX 0xDEC4U
 
 // Glare filter DCI address
 #define VL53L5_GLARE_FILTER 0xB870
@@ -750,61 +745,44 @@ bool Adafruit_VL53L5_Lite::getRangingData(int16_t *distances,
     return false;
   }
 
-  // Read raw data
+  // Read raw data — mirrors vl53l5cx_get_ranging_data exactly
   if (!_readMulti(0x0000, _temp, _data_read_size)) {
     return false;
   }
   _streamcount = _temp[0];
   _swapBuffer(_temp, (uint16_t)_data_read_size);
 
-  // Parse tagged blocks
   uint8_t zones =
       (_resolution == VL53L5_RESOLUTION_8X8) ? 64 : 16;
 
+  // Parse tagged blocks using Block_header union (same as ST)
   for (uint32_t i = 16; i < _data_read_size; i += 4) {
-    // Block header: {idx(8), type(4), size(12), unused(8)}
-    // After swap, it's in native u32 format
-    uint32_t bh;
-    memcpy(&bh, &_temp[i], 4);
-    uint8_t idx = (bh >> 16) & 0xFF;
-    uint32_t btype = (bh >> 12) & 0x0F;
-    uint32_t bsize = bh & 0x0FFF;
-
+    union Block_header *bh = (union Block_header *)&_temp[i];
     uint32_t msize;
-    if (btype > 1 && btype < 0xD) {
-      msize = btype * bsize;
+
+    if (bh->type > 0x1 && bh->type < 0xd) {
+      msize = bh->type * bh->size;
     } else {
-      msize = bsize;
+      msize = bh->size;
     }
 
-    switch (idx) {
-    case BH_IDX_METADATA:
+    switch (bh->idx) {
+    case VL53L5CX_METADATA_IDX:
       _temperature = (int8_t)_temp[i + 12];
       break;
-    case BH_IDX_DISTANCE:
+    case VL53L5CX_DISTANCE_IDX:
       if (distances) {
-        memcpy(distances, &_temp[i + 4], zones * 2);
-        // Convert from 1/4 mm to mm
-        for (uint8_t z = 0; z < zones; z++) {
-          distances[z] /= 4;
-          if (distances[z] < 0) {
-            distances[z] = 0;
-          }
-        }
+        memcpy(distances, &_temp[i + 4], msize);
       }
       break;
-    case BH_IDX_TARGET_STATUS:
+    case VL53L5CX_TARGET_STATUS_IDX:
       if (statuses) {
-        memcpy(statuses, &_temp[i + 4], zones);
+        memcpy(statuses, &_temp[i + 4], msize);
       }
       break;
-    case BH_IDX_RANGE_SIGMA:
+    case VL53L5CX_RANGE_SIGMA_MM_IDX:
       if (sigmas) {
-        memcpy(sigmas, &_temp[i + 4], zones * 2);
-        // Convert from 1/128 mm to mm
-        for (uint8_t z = 0; z < zones; z++) {
-          sigmas[z] /= 128;
-        }
+        memcpy(sigmas, &_temp[i + 4], msize);
       }
       break;
     default:
