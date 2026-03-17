@@ -1,0 +1,65 @@
+/*!
+ * @file Adafruit_VL53L5CX.h
+ *
+ * Arduino library for the ST VL53L5CX 8x8 Time-of-Flight sensor
+ *
+ * Adafruit invests time and resources providing this open source code,
+ * please support Adafruit and open-source hardware by purchasing
+ * products from Adafruit!
+ *
+ * Written by Limor 'ladyada' Fried with assistance from Claude Code
+ *
+ * MIT license, all text above must be included in any redistribution
+ */
+
+#ifndef ADAFRUIT_VL53L5CX_H
+#define ADAFRUIT_VL53L5CX_H
+
+#include <Adafruit_BusIO_Register.h>
+#include <Adafruit_I2CDevice.h>
+#include <Arduino.h>
+#include <Wire.h>
+
+#include "vl53l5cx_api.h"
+
+#define VL53L5CX_DEFAULT_ADDRESS 0x29 ///< Default I2C address (7-bit)
+
+/*!
+ * @brief Class for VL53L5CX ToF sensor
+ */
+class Adafruit_VL53L5CX {
+public:
+  Adafruit_VL53L5CX();
+  ~Adafruit_VL53L5CX();
+
+  bool begin(uint8_t address = VL53L5CX_DEFAULT_ADDRESS, TwoWire *wire = &Wire);
+
+  bool startRanging(void);
+  bool stopRanging(void);
+
+  bool isDataReady(void);
+  bool getRangingData(VL53L5CX_ResultsData *results);
+
+  bool setResolution(uint8_t resolution);
+  uint8_t getResolution(void);
+
+  bool setRangingFrequency(uint8_t frequency_hz);
+  uint8_t getRangingFrequency(void);
+
+  bool setIntegrationTime(uint32_t time_ms);
+  uint32_t getIntegrationTime(void);
+
+  bool setSharpenerPercent(uint8_t percent);
+  uint8_t getSharpenerPercent(void);
+
+  bool setAddress(uint8_t new_address);
+
+  VL53L5CX_Configuration *getConfig(void) { return &_config; }
+
+private:
+  Adafruit_I2CDevice *_i2c_dev = nullptr;
+  VL53L5CX_Configuration _config;
+  bool _initialized = false;
+};
+
+#endif // ADAFRUIT_VL53L5CX_H
