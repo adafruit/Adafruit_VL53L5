@@ -191,42 +191,38 @@ bool Adafruit_VL53L5_Lite::_dciRead(uint16_t index, uint8_t *data,
 
 bool Adafruit_VL53L5_Lite::_dciWrite(const uint8_t *data, uint16_t index,
                                       uint16_t size) {
-  uint8_t headers[4] = {0x00, 0x00, 0x00, 0x00};
-  uint8_t footer[8] = {0x00,
-                        0x00,
-                        0x00,
-                        0x0F,
-                        0x05,
-                        0x01,
-                        (uint8_t)((size + 8) >> 8),
-                        (uint8_t)((size + 8) & 0xFF)};
+  // Mirrors vl53l5cx_dci_write_data exactly:
+  // Build [header(4) | swapped_data(size) | footer(8)] in _temp,
+  // then write as one contiguous block.
+
+  if ((size + 12) > VL53L5_TEMP_BUFFER_SIZE) {
+    return false;
+  }
 
   uint16_t address = VL53L5_UI_CMD_END - (size + 12) + 1;
 
-  // Build command: header + index_encoded + data + footer
-  headers[0] = (uint8_t)(index >> 8);
-  headers[1] = (uint8_t)(index & 0xFF);
-  headers[2] = (uint8_t)((size & 0xFF0) >> 4);
-  headers[3] = (uint8_t)((size & 0x0F) << 4);
+  // Headers: raw (NOT swapped), matching ST exactly
+  uint8_t headers[4] = {
+      (uint8_t)(index >> 8),
+      (uint8_t)(index & 0xFF),
+      (uint8_t)((size & 0xFF0) >> 4),
+      (uint8_t)((size & 0x0F) << 4)};
 
-  // Write header
-  _swapBuffer(headers, 4);
-  if (!_writeMulti(address, headers, 4)) {
-    return false;
-  }
+  uint8_t footer[8] = {0x00, 0x00, 0x00, 0x0F, 0x05, 0x01,
+                        (uint8_t)((size + 8) >> 8),
+                        (uint8_t)((size + 8) & 0xFF)};
 
-  // Write data (need to swap first — work on temp copy)
-  if (size > VL53L5_TEMP_BUFFER_SIZE) {
-    return false;
-  }
-  memcpy(_temp, data, size);
-  _swapBuffer(_temp, size);
-  if (!_writeMulti(address + 4, _temp, size)) {
-    return false;
-  }
+  // Swap data in a local copy (ST swaps the input buffer in place and
+  // restores it after; we copy to _temp to avoid mutating caller's data)
+  memcpy(&_temp[4], data, size);
+  _swapBuffer(&_temp[4], size);
 
-  // Write footer
-  if (!_writeMulti(address + 4 + size, footer, 8)) {
+  // Assemble frame: header + swapped data + footer
+  memcpy(&_temp[0], headers, 4);
+  memcpy(&_temp[4 + size], footer, 8);
+
+  // Single write of the entire frame
+  if (!_writeMulti(address, _temp, size + 12)) {
     return false;
   }
 
@@ -373,64 +369,94 @@ bool Adafruit_VL53L5_Lite::_uploadFirmware() {
 }
 
 bool Adafruit_VL53L5_Lite::_sendOffsetData(uint8_t resolution) {
-  // Build offset command with signal and range grids from NVM data
-  // This mirrors _vl53l5cx_send_offset_data in the ST ULD
+  // Mirrors _vl53l5cx_send_offset_data in the ST ULD exactly
   uint32_t signal_grid[64];
   int16_t range_grid[64];
   uint8_t dss_4x4[] = {0x0F, 0x04, 0x04, 0x00, 0x08, 0x10, 0x10, 0x07};
   uint8_t footer[] = {0x00, 0x00, 0x00, 0x0F, 0x03, 0x01, 0x01, 0xE4};
 
-  memcpy(signal_grid, &_offset_data[0x10], sizeof(signal_grid));
-  memcpy(range_grid, &_offset_data[0x110], sizeof(range_grid));
+  memcpy(_temp, _offset_data, VL53L5_OFFSET_BUFFER_SIZE);
 
-  // Reorder from 8x8 to 4x4 lookup (mirroring ST logic)
-  for (int i = 0; i < 16; i++) {
-    // ST maps 4x4 zone indices to 8x8 positions
-    signal_grid[i] = signal_grid[(4 * (i / 4)) * 8 + 4 * (i % 4)];
-    range_grid[i] = range_grid[(4 * (i / 4)) * 8 + 4 * (i % 4)];
+  if (resolution == VL53L5_RESOLUTION_4X4) {
+    memcpy(&_temp[0x10], dss_4x4, sizeof(dss_4x4));
+    _swapBuffer(_temp, VL53L5_OFFSET_BUFFER_SIZE);
+    memcpy(signal_grid, &_temp[0x3C], sizeof(signal_grid));
+    memcpy(range_grid, &_temp[0x140], sizeof(range_grid));
+
+    for (int8_t j = 0; j < 4; j++) {
+      for (int8_t i = 0; i < 4; i++) {
+        signal_grid[i + (4 * j)] =
+            (signal_grid[(2 * i) + (16 * j) + 0] +
+             signal_grid[(2 * i) + (16 * j) + 1] +
+             signal_grid[(2 * i) + (16 * j) + 8] +
+             signal_grid[(2 * i) + (16 * j) + 9]) /
+            (uint32_t)4;
+        range_grid[i + (4 * j)] =
+            (range_grid[(2 * i) + (16 * j)] +
+             range_grid[(2 * i) + (16 * j) + 1] +
+             range_grid[(2 * i) + (16 * j) + 8] +
+             range_grid[(2 * i) + (16 * j) + 9]) /
+            (int16_t)4;
+      }
+    }
+    memset(&range_grid[0x10], 0, 96);
+    memset(&signal_grid[0x10], 0, 192);
+    memcpy(&_temp[0x3C], signal_grid, sizeof(signal_grid));
+    memcpy(&_temp[0x140], range_grid, sizeof(range_grid));
+    _swapBuffer(_temp, VL53L5_OFFSET_BUFFER_SIZE);
   }
 
-  // Build the full command buffer
-  memset(_temp, 0, VL53L5_TEMP_BUFFER_SIZE);
-  memcpy(&_temp[0x00], _offset_data, 0x10);        // Header from NVM
-  memcpy(&_temp[0x10], signal_grid, 16 * 4);        // 4x4 signal grid
-  memcpy(&_temp[0x110], range_grid, 16 * 2);        // 4x4 range grid
-  memcpy(&_temp[VL53L5_OFFSET_BUFFER_SIZE - 8], dss_4x4, 8);
-
-  _swapBuffer(_temp, VL53L5_OFFSET_BUFFER_SIZE);
-
-  uint16_t address = VL53L5_UI_CMD_END - (VL53L5_OFFSET_BUFFER_SIZE + 8) + 1;
-  if (!_writeMulti(address, _temp, VL53L5_OFFSET_BUFFER_SIZE)) {
-    return false;
+  // Shift buffer left by 8 bytes (strip DCI header)
+  for (uint16_t k = 0; k < (VL53L5_OFFSET_BUFFER_SIZE - 4); k++) {
+    _temp[k] = _temp[k + 8];
   }
-  if (!_writeMulti(address + VL53L5_OFFSET_BUFFER_SIZE, footer, 8)) {
+  // Append footer
+  memcpy(&_temp[0x1E0], footer, 8);
+
+  if (!_writeMulti(0x2E18, _temp, VL53L5_OFFSET_BUFFER_SIZE)) {
     return false;
   }
   return _pollForAnswer(4, 1, VL53L5_UI_CMD_STATUS, 0xFF, 0x03);
 }
 
 bool Adafruit_VL53L5_Lite::_sendXtalkData(uint8_t resolution) {
-  uint8_t footer[] = {0x00, 0x00, 0x00, 0x0F, 0x03, 0x01, 0x03, 0x04};
+  // Mirrors _vl53l5cx_send_xtalk_data in the ST ULD exactly
+  uint8_t res4x4[] = {0x0F, 0x04, 0x04, 0x17, 0x08, 0x10, 0x10, 0x07};
+  uint8_t dss_4x4[] = {0x00, 0x78, 0x00, 0x08, 0x00, 0x00, 0x00, 0x08};
+  uint8_t profile_4x4[] = {0xA0, 0xFC, 0x01, 0x00};
+  uint32_t signal_grid[64];
 
   memcpy(_temp, _xtalk_data, VL53L5_XTALK_BUFFER_SIZE);
-  _swapBuffer(_temp, VL53L5_XTALK_BUFFER_SIZE);
 
-  uint16_t address = VL53L5_UI_CMD_END - (VL53L5_XTALK_BUFFER_SIZE + 8) + 1;
-  Serial.print(F("    [xtalk] Writing ")); Serial.print(VL53L5_XTALK_BUFFER_SIZE);
-  Serial.print(F(" bytes to 0x")); Serial.println(address, HEX);
-  if (!_writeMulti(address, _temp, VL53L5_XTALK_BUFFER_SIZE)) {
-    Serial.println(F("    [xtalk] Data write failed"));
+  if (resolution == VL53L5_RESOLUTION_4X4) {
+    memcpy(&_temp[0x08], res4x4, sizeof(res4x4));
+    memcpy(&_temp[0x20], dss_4x4, sizeof(dss_4x4));
+
+    _swapBuffer(_temp, VL53L5_XTALK_BUFFER_SIZE);
+    memcpy(signal_grid, &_temp[0x34], sizeof(signal_grid));
+
+    for (int8_t j = 0; j < 4; j++) {
+      for (int8_t i = 0; i < 4; i++) {
+        signal_grid[i + (4 * j)] =
+            (signal_grid[(2 * i) + (16 * j) + 0] +
+             signal_grid[(2 * i) + (16 * j) + 1] +
+             signal_grid[(2 * i) + (16 * j) + 8] +
+             signal_grid[(2 * i) + (16 * j) + 9]) /
+            (uint32_t)4;
+      }
+    }
+    memset(&signal_grid[0x10], 0, 192);
+    memcpy(&_temp[0x34], signal_grid, sizeof(signal_grid));
+    _swapBuffer(_temp, VL53L5_XTALK_BUFFER_SIZE);
+    memcpy(&_temp[0x134], profile_4x4, sizeof(profile_4x4));
+    memset(&_temp[0x078], 0, 4);
+  }
+
+  // ST writes directly to 0x2CF8, no footer, no shift
+  if (!_writeMulti(0x2CF8, _temp, VL53L5_XTALK_BUFFER_SIZE)) {
     return false;
   }
-  Serial.println(F("    [xtalk] Writing footer..."));
-  if (!_writeMulti(address + VL53L5_XTALK_BUFFER_SIZE, footer, 8)) {
-    Serial.println(F("    [xtalk] Footer write failed"));
-    return false;
-  }
-  Serial.println(F("    [xtalk] Polling for status 0x03..."));
-  bool ok = _pollForAnswer(4, 1, VL53L5_UI_CMD_STATUS, 0xFF, 0x03);
-  if (!ok) Serial.println(F("    [xtalk] Poll failed!"));
-  return ok;
+  return _pollForAnswer(4, 1, VL53L5_UI_CMD_STATUS, 0xFF, 0x03);
 }
 
 bool Adafruit_VL53L5_Lite::_loadNVMAndCalibration() {
@@ -470,32 +496,44 @@ bool Adafruit_VL53L5_Lite::_loadNVMAndCalibration() {
 }
 
 bool Adafruit_VL53L5_Lite::_sendDefaultConfig() {
+  Serial.println(F("    [cfg] Writing default config..."));
   if (!_writeMulti(0x2C34, (uint8_t *)VL53L5CX_DEFAULT_CONFIGURATION,
                    sizeof(VL53L5CX_DEFAULT_CONFIGURATION))) {
+    Serial.println(F("    [cfg] Config write failed"));
     return false;
   }
+  Serial.println(F("    [cfg] Polling..."));
   if (!_pollForAnswer(4, 1, VL53L5_UI_CMD_STATUS, 0xFF, 0x03)) {
+    Serial.println(F("    [cfg] Config poll failed"));
     return false;
   }
 
-  // Set pipe control (1 target per zone)
+  Serial.println(F("    [cfg] DCI pipe control..."));
   uint8_t pipe_ctrl[] = {1, 0x00, 0x01, 0x00};
   if (!_dciWrite(pipe_ctrl, VL53L5_DCI_PIPE_CONTROL, sizeof(pipe_ctrl))) {
+    Serial.println(F("    [cfg] Pipe control failed"));
     return false;
   }
 
-  // Set single range mode
+  Serial.println(F("    [cfg] DCI single range..."));
   uint32_t single_range = 0x01;
   if (!_dciWrite((uint8_t *)&single_range, VL53L5_DCI_SINGLE_RANGE, 4)) {
+    Serial.println(F("    [cfg] Single range failed"));
     return false;
   }
 
-  // Enable glare filter
+  Serial.println(F("    [cfg] DCI glare filter..."));
   uint8_t one = 1;
   if (!_dciReplace(VL53L5_GLARE_FILTER, 40, &one, 1, 0x26)) {
+    Serial.println(F("    [cfg] Glare filter 0x26 failed"));
     return false;
   }
-  return _dciReplace(VL53L5_GLARE_FILTER, 40, &one, 1, 0x25);
+  if (!_dciReplace(VL53L5_GLARE_FILTER, 40, &one, 1, 0x25)) {
+    Serial.println(F("    [cfg] Glare filter 0x25 failed"));
+    return false;
+  }
+  Serial.println(F("    [cfg] Done!"));
+  return true;
 }
 
 // ============================================================
@@ -548,6 +586,7 @@ bool Adafruit_VL53L5_Lite::begin(uint8_t address, TwoWire *wire) {
   }
 
   Serial.println(F("  [lite] Sending default config..."));
+  Serial.flush();
   if (!_sendDefaultConfig()) {
     Serial.println(F("  [lite] Default config failed"));
     return false;

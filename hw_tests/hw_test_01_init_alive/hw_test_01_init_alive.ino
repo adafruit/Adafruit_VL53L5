@@ -38,16 +38,16 @@ void report(const char *name, bool ok) {
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) delay(10);
+  delay(2000);  // Give time to connect serial monitor (ESP32 doesn't need while(!Serial))
 
   Serial.println(F("=== HW Test 01: Init & Alive ==="));
   Serial.println();
 
   // Test 1: I2C scan
-  Wire.begin();
-  Wire.setClock(1000000);
-  Wire.beginTransmission(0x29);
-  bool i2cFound = (Wire.endTransmission() == 0);
+  Wire1.begin(SDA1, SCL1);  // STEMMA QT on ESP32 QT Py
+  Wire1.setClock(400000);
+  Wire1.beginTransmission(0x29);
+  bool i2cFound = (Wire1.endTransmission() == 0);
   report("1. I2C device at 0x29", i2cFound);
   if (!i2cFound) {
     Serial.println(F("Sensor not found, cannot continue."));
@@ -56,7 +56,7 @@ void setup() {
 
   // Test 2: begin()
   Serial.println(F("   Initializing sensor (up to 10s)..."));
-  bool initOk = vl53l5cx.begin();
+  bool initOk = vl53l5cx.begin(0x29, &Wire1);
   report("2. begin() succeeds", initOk);
   if (!initOk) {
     Serial.println(F("Init failed, cannot continue."));
