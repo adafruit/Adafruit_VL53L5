@@ -63,6 +63,36 @@
 #define VL53L5_DCI_OUTPUT_LIST 0xD980
 #define VL53L5_DCI_PIPE_CONTROL 0xDB80
 
+// Glare filter DCI address
+#define VL53L5_GLARE_FILTER 0xCD5C
+
+// Number of targets per zone
+#define VL53L5CX_NB_TARGET_PER_ZONE 1
+
+// Output block headers (1 target per zone)
+#define VL53L5CX_START_BH 0x0000000DU
+#define VL53L5CX_METADATA_BH 0x54B400C0U
+#define VL53L5CX_COMMONDATA_BH 0x54C00040U
+#define VL53L5CX_AMBIENT_RATE_BH 0x54D00104U
+#define VL53L5CX_SPAD_COUNT_BH 0x55D00404U
+#define VL53L5CX_NB_TARGET_DETECTED_BH 0xDB840401U
+#define VL53L5CX_SIGNAL_RATE_BH 0xDBC40404U
+#define VL53L5CX_RANGE_SIGMA_MM_BH 0xDEC40402U
+#define VL53L5CX_DISTANCE_BH 0xDF440402U
+#define VL53L5CX_REFLECTANCE_BH 0xE0440401U
+#define VL53L5CX_TARGET_STATUS_BH 0xE0840401U
+#define VL53L5CX_MOTION_DETECT_BH 0xD85808C0U
+
+// Block header union for parsing output block descriptors
+union Block_header {
+  uint32_t bytes;
+  struct {
+    uint32_t type : 4;
+    uint32_t size : 12;
+    uint32_t idx : 16;
+  };
+};
+
 // NVM/calibration sizes
 #define VL53L5_NVM_DATA_SIZE 492
 #define VL53L5_OFFSET_BUFFER_SIZE 488

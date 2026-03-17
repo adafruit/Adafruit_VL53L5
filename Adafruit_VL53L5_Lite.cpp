@@ -603,74 +603,84 @@ bool Adafruit_VL53L5_Lite::startRanging() {
     return false;
   }
 
-  uint8_t resolution;
-  uint32_t i;
-
-  resolution = getResolution();
+  // Mirrors vl53l5cx_start_ranging exactly
+  uint8_t resolution = getResolution();
   _data_read_size = 0;
   _streamcount = 255;
 
-  // Read output config to determine data read size
-  // This mirrors the ST start_ranging logic: compute header_config
-  // and output list, then issue the start command
-  uint32_t output[17] = {0};
   uint32_t header_config[2] = {0, 0};
+  uint8_t cmd[] = {0x00, 0x03, 0x00, 0x00};
 
-  // Build output list based on enabled outputs
-  output[0] = 0x0254; // Start BH for output list
-  output[1] = 0x1040; // Metadata
-  output[2] = 0x0840; // Common data
-  output[3] = 0x40040; // Ambient rate
-  output[4] = 0x10140; // Nb targets
-  output[5] = 0x40540; // Spad count
-  output[6] = 0x80440; // Signal rate
-  output[7] = 0x20540; // Distance
-  output[8] = 0x10640; // Range sigma
-  output[9] = 0x10740; // Reflectance
-  output[10] = 0x10840; // Target status
-  // output[11-16] reserved
-  output[11] = 0x10940; // Motion indicator
+  // Output block headers — must match VL53L5CX_*_BH defines (1 target/zone)
+  uint32_t output[] = {
+      VL53L5CX_START_BH,
+      VL53L5CX_METADATA_BH,
+      VL53L5CX_COMMONDATA_BH,
+      VL53L5CX_AMBIENT_RATE_BH,
+      VL53L5CX_SPAD_COUNT_BH,
+      VL53L5CX_NB_TARGET_DETECTED_BH,
+      VL53L5CX_SIGNAL_RATE_BH,
+      VL53L5CX_RANGE_SIGMA_MM_BH,
+      VL53L5CX_DISTANCE_BH,
+      VL53L5CX_REFLECTANCE_BH,
+      VL53L5CX_TARGET_STATUS_BH,
+      VL53L5CX_MOTION_DETECT_BH};
 
-  // Set data size
-  _data_read_size = 40; // headers + metadata + common
+  // Enable bits: mandatory (meta+common+start) + all optional outputs
+  uint32_t output_bh_enable[4] = {0x00000007, 0x00000000, 0x00000000,
+                                   0xC0000000};
+  // Enable ambient(8) + spad(16) + nb_target(32) + signal(64) +
+  // sigma(128) + distance(256) + reflectance(512) + status(1024) +
+  // motion(2048)
+  output_bh_enable[0] += 8 + 16 + 32 + 64 + 128 + 256 + 512 + 1024 + 2048;
 
-  // Per-zone data sizes
-  uint32_t zones = (resolution == VL53L5_RESOLUTION_4X4) ? 16 : 64;
-  _data_read_size += 260;  // ambient (4 bytes * 64 + 4 header)
-  _data_read_size += 68;   // nb targets (1 * 64 + 4)
-  _data_read_size += 260;  // spad count
-  _data_read_size += 260;  // signal rate
-  _data_read_size += 132;  // distance (2 * 64 + 4)
-  _data_read_size += 132;  // sigma
-  _data_read_size += 68;   // reflectance
-  _data_read_size += 68;   // target status
-  _data_read_size += 144;  // motion indicator
-  _data_read_size += 20;   // footer
+  // Compute data_read_size from block headers (ST algorithm)
+  uint32_t i;
+  for (i = 0; i < (sizeof(output) / sizeof(uint32_t)); i++) {
+    if (output[i] == 0 ||
+        (output_bh_enable[i / 32] & ((uint32_t)1 << (i % 32))) == 0) {
+      continue;
+    }
+    union Block_header *bh = (union Block_header *)&output[i];
+    if (bh->type >= 0x1 && bh->type < 0x0d) {
+      if (bh->idx >= 0x54d0 && bh->idx < (0x54d0 + 960)) {
+        bh->size = resolution;
+      } else {
+        bh->size = resolution * VL53L5CX_NB_TARGET_PER_ZONE;
+      }
+      _data_read_size += bh->type * bh->size;
+    } else {
+      _data_read_size += bh->size;
+    }
+    _data_read_size += 4;
+  }
+  _data_read_size += 24;
 
-  header_config[0] = _data_read_size;
-  header_config[1] = 16 + 12; // header + metadata + common
-
-  // Write output settings via DCI
+  // Write output list, config, and enables via DCI
   if (!_dciWrite((uint8_t *)output, VL53L5_DCI_OUTPUT_LIST,
                  sizeof(output))) {
     return false;
   }
+
+  header_config[0] = _data_read_size;
+  header_config[1] = i + 1;
   if (!_dciWrite((uint8_t *)header_config, VL53L5_DCI_OUTPUT_CONFIG,
                  sizeof(header_config))) {
     return false;
   }
 
-  // Enable all output block headers
-  uint32_t output_bh_enable[4] = {0x00000007, 0x00000000, 0x00000000,
-                                   0xC0000000};
   if (!_dciWrite((uint8_t *)output_bh_enable, VL53L5_DCI_OUTPUT_ENABLES,
                  sizeof(output_bh_enable))) {
     return false;
   }
 
-  // Send start command
-  uint8_t cmd[] = {0x00, 0x03, 0x00, 0x00};
-  if (!_writeMulti(VL53L5_UI_CMD_END - 3, cmd, 4)) {
+  // Start xshut bypass (interrupt mode)
+  _setPage(0x00);
+  _writeByte(0x09, 0x05);
+  _setPage(0x02);
+
+  // Start ranging session
+  if (!_writeMulti(VL53L5_UI_CMD_END - 3, cmd, sizeof(cmd))) {
     return false;
   }
   return _pollForAnswer(4, 1, VL53L5_UI_CMD_STATUS, 0xFF, 0x03);
