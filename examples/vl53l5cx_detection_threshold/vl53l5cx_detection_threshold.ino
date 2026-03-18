@@ -23,7 +23,11 @@
 
 // INT pin - connect to VL53L5CX INT output
 // Active-low, open-drain - use internal pullup
+#ifdef ESP32
+#define INT_PIN 14
+#else
 #define INT_PIN A2
+#endif
 
 // Detection threshold distance in mm
 #define THRESHOLD_DISTANCE_MM 500

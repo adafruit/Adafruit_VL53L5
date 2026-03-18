@@ -16,7 +16,7 @@
  */
 
 #include <Adafruit_VL53L5CX.h>
-#include "../hw_test_helper.h"
+#include "hw_test_helper.h"
 
 Adafruit_VL53L5CX vl53l5cx;
 
