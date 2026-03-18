@@ -444,3 +444,71 @@ bool Adafruit_VL53L5CX::setMotionResolution(uint8_t resolution) {
                                                    resolution) ==
           VL53L5CX_STATUS_OK);
 }
+
+// --- Xtalk Calibration ---
+
+/*!
+ * @brief Run xtalk calibration. Requires a target at a known distance
+ *   with known reflectance. Ranging must be stopped before calling.
+ * @param reflectance_percent Target reflectance 1-99% (ST recommends 3%)
+ * @param nb_samples Number of samples 1-16 (higher = more accurate)
+ * @param distance_mm Target distance 600-3000mm
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::calibrateXtalk(uint16_t reflectance_percent,
+                                        uint8_t nb_samples,
+                                        uint16_t distance_mm) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_calibrate_xtalk(&_config, reflectance_percent, nb_samples,
+                                   distance_mm) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Get xtalk calibration data buffer (776 bytes)
+ * @param data Buffer of VL53L5CX_XTALK_BUFFER_SIZE bytes
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::getXtalkCalData(uint8_t *data) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_get_caldata_xtalk(&_config, data) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Set xtalk calibration data buffer (776 bytes)
+ * @param data Buffer of VL53L5CX_XTALK_BUFFER_SIZE bytes
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setXtalkCalData(uint8_t *data) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_set_caldata_xtalk(&_config, data) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Get xtalk margin in kcps/spads (default 50)
+ * @param margin Pointer to store margin value
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::getXtalkMargin(uint32_t *margin) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_get_xtalk_margin(&_config, margin) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Set xtalk margin in kcps/spads (0-10000, default 50)
+ * @param margin New margin value
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setXtalkMargin(uint32_t margin) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_set_xtalk_margin(&_config, margin) == VL53L5CX_STATUS_OK);
+}

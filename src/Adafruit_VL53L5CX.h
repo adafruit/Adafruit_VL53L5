@@ -23,6 +23,7 @@
 #include "vl53l5cx_api.h"
 #include "vl53l5cx_plugin_detection_thresholds.h"
 #include "vl53l5cx_plugin_motion_indicator.h"
+#include "vl53l5cx_plugin_xtalk.h"
 
 #define VL53L5CX_DEFAULT_ADDRESS 0x29 ///< Default I2C address (7-bit)
 
@@ -75,6 +76,14 @@ public:
   bool initMotionIndicator(uint8_t resolution);
   bool setMotionDistance(uint16_t min_mm, uint16_t max_mm);
   bool setMotionResolution(uint8_t resolution);
+
+  // Xtalk Calibration
+  bool calibrateXtalk(uint16_t reflectance_percent, uint8_t nb_samples,
+                      uint16_t distance_mm);
+  bool getXtalkCalData(uint8_t *data);
+  bool setXtalkCalData(uint8_t *data);
+  bool getXtalkMargin(uint32_t *margin);
+  bool setXtalkMargin(uint32_t margin);
 
   VL53L5CX_Configuration *getConfig(void) { return &_config; }
 
