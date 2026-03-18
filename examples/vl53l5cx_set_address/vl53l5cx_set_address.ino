@@ -28,8 +28,6 @@ void setup() {
   Serial.println("========================================");
   Serial.println();
 
-  Wire.begin();
-  Wire.setClock(1000000); // 1MHz I2C - sensor supports up to 1MHz
 
   Serial.print("Initializing sensor at default address 0x");
   Serial.print(DEFAULT_ADDRESS, HEX);

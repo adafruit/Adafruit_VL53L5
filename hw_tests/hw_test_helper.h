@@ -4,6 +4,10 @@
  * Board-specific I2C setup for hardware tests.
  * ESP32 QT Py uses Wire1 (SDA1/SCL1) for STEMMA QT connector.
  * All other boards default to Wire.
+ *
+ * Note: Wire.setClock() is handled by Adafruit_VL53L5CX::begin().
+ * HW_TEST_I2C_INIT() only calls Wire.begin() so the bus is ready
+ * for pre-init I2C scans.
  */
 
 #ifndef HW_TEST_HELPER_H
@@ -17,10 +21,10 @@
     defined(ARDUINO_ADAFRUIT_QTPY_ESP32S3_NOPSRAM) || \
     defined(ARDUINO_ADAFRUIT_QTPY_ESP32S3)
   #define HW_TEST_WIRE Wire1
-  #define HW_TEST_I2C_INIT() do { Wire1.begin(SDA1, SCL1); Wire1.setClock(1000000); } while(0)
+  #define HW_TEST_I2C_INIT() do { Wire1.begin(SDA1, SCL1); } while(0)
 #else
   #define HW_TEST_WIRE Wire
-  #define HW_TEST_I2C_INIT() do { Wire.begin(); Wire.setClock(1000000); } while(0)
+  #define HW_TEST_I2C_INIT() do { Wire.begin(); } while(0)
 #endif
 
 #endif // HW_TEST_HELPER_H

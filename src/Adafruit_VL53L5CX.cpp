@@ -32,9 +32,11 @@ Adafruit_VL53L5CX::~Adafruit_VL53L5CX() {
  * @brief Initialize the sensor
  * @param address I2C address (default 0x29)
  * @param wire Pointer to Wire instance
+ * @param i2c_clock I2C clock speed in Hz (default 400000)
  * @return true on success, false on failure
  */
-bool Adafruit_VL53L5CX::begin(uint8_t address, TwoWire *wire) {
+bool Adafruit_VL53L5CX::begin(uint8_t address, TwoWire *wire,
+                               uint32_t i2c_clock) {
   if (_i2c_dev) {
     delete _i2c_dev;
   }
@@ -43,6 +45,8 @@ bool Adafruit_VL53L5CX::begin(uint8_t address, TwoWire *wire) {
   if (!_i2c_dev->begin()) {
     return false;
   }
+
+  wire->setClock(i2c_clock);
 
   // Set up the platform struct for ST driver
   _config.platform.address = address;

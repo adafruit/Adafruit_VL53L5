@@ -48,8 +48,6 @@ void setup() {
   pinMode(INT_PIN, INPUT_PULLUP);
 
   // Initialize I2C at 1MHz (sensor supports up to 1MHz)
-  Wire.begin();
-  Wire.setClock(1000000);
 
   Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));
 

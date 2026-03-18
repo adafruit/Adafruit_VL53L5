@@ -27,8 +27,6 @@ void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);
 
-  Wire.begin();
-  Wire.setClock(1000000);
   Serial.println(F("Adafruit VL53L5CX ASCII Art Demo"));
   Serial.println(F("================================="));
   Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));

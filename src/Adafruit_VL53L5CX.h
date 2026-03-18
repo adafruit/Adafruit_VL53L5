@@ -35,7 +35,8 @@ public:
   Adafruit_VL53L5CX();
   ~Adafruit_VL53L5CX();
 
-  bool begin(uint8_t address = VL53L5CX_DEFAULT_ADDRESS, TwoWire *wire = &Wire);
+  bool begin(uint8_t address = VL53L5CX_DEFAULT_ADDRESS,
+             TwoWire *wire = &Wire, uint32_t i2c_clock = 400000);
 
   bool startRanging(void);
   bool stopRanging(void);

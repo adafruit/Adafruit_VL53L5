@@ -67,7 +67,7 @@ void setup() {
   report("1. Sensor on I2C (LPn HIGH)", found);
 
   // Test 2: begin() succeeds
-  bool initOk = vl53l5cx.begin(0x29, &HW_TEST_WIRE);
+  bool initOk = vl53l5cx.begin(0x29, &HW_TEST_WIRE, 1000000);
   report("2. begin() succeeds", initOk);
   if (!initOk) {
     Serial.println(F("Init failed, cannot continue."));
@@ -92,7 +92,7 @@ void setup() {
   report("4. Sensor back (LPn HIGH)", back);
 
   // Test 5: begin() succeeds after reset
-  bool reinitOk = vl53l5cx.begin(0x29, &HW_TEST_WIRE);
+  bool reinitOk = vl53l5cx.begin(0x29, &HW_TEST_WIRE, 1000000);
   report("5. begin() after reset", reinitOk);
 
   // Test 6: Ranging works after reset

@@ -22,8 +22,6 @@ void setup() {
   Serial.println("Adafruit VL53L5CX simpletest");
   Serial.println("============================");
 
-  Wire.begin();
-  Wire.setClock(1000000); // 1MHz I2C - sensor supports up to 1MHz
   // Or use 400000 for 400kHz if 1MHz is unstable
 
   Serial.println("Initializing sensor... (this can take up to 10 seconds)");
