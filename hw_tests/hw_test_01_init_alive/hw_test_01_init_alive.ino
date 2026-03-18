@@ -34,6 +34,7 @@ void setup() {
   Serial.println();
 
   // Test 1: I2C scan
+  Wire.begin();
   Wire.beginTransmission(0x29);
   bool i2cFound = (Wire.endTransmission() == 0);
   report("1. I2C device at 0x29", i2cFound);
