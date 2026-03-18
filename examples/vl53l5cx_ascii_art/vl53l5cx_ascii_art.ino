@@ -17,10 +17,32 @@
 Adafruit_VL53L5CX vl53l5cx;
 VL53L5CX_ResultsData results;
 
-// ASCII density ramp: space = far (>2000mm), @ = close (<200mm)
+// --- ASCII density ramps (space = far, last char = close) ---
+// Pick one by changing RAMP_SELECT (0-5)
+#define RAMP_SELECT 0
+
+#if RAMP_SELECT == 0
+// 10-char classic
 const char densityRamp[] = " .:-=+*#%@";
-const int rampLength = 10;
-const int minDist = 200;   // mm - closest (maps to '@')
+#elif RAMP_SELECT == 1
+// 24-char fine gradient (Paul Bourke subset)
+const char densityRamp[] = " .`^,:;!i~+][)(zU#MW&%B@";
+#elif RAMP_SELECT == 2
+// 16-char hex-density: shows relative distance as hex digit
+const char densityRamp[] = " 123456789ABCDEF";
+#elif RAMP_SELECT == 3
+// 10-char dot-matrix: chunky, high contrast
+const char densityRamp[] = " .oO08@#MW";
+#elif RAMP_SELECT == 4
+// 7-char minimal: for tiny terminals
+const char densityRamp[] = " .:+#@";
+#elif RAMP_SELECT == 5
+// 70-char full Paul Bourke ramp: maximum smoothness
+const char densityRamp[] = " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+#endif
+
+const int rampLength = sizeof(densityRamp) - 1; // auto-calculated
+const int minDist = 200;   // mm - closest (maps to last char)
 const int maxDist = 2000;  // mm - farthest (maps to ' ')
 
 void setup() {
@@ -75,11 +97,7 @@ void loop() {
 
       // Print legend
       Serial.println();
-      Serial.print(F("Legend: [@=<200mm] [%=#=*=+=close] [-=:=.= =far] [?=invalid]  Range: "));
-      Serial.print(minDist);
-      Serial.print(F("-"));
-      Serial.print(maxDist);
-      Serial.println(F("mm"));
+      printLegend();
     }
   }
 
@@ -122,4 +140,17 @@ void printGrid() {
     }
     Serial.println();
   }
+}
+
+// Print a dynamic legend showing the ramp and distance range
+void printLegend() {
+  Serial.print(F("Ramp: ["));
+  for (int i = rampLength - 1; i >= 0; i--) {
+    Serial.print(densityRamp[i]);
+  }
+  Serial.print(F("] close<"));
+  Serial.print(minDist);
+  Serial.print(F("mm ... "));
+  Serial.print(maxDist);
+  Serial.println(F("mm>far  [?]=invalid"));
 }
