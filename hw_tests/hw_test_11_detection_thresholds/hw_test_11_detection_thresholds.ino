@@ -152,15 +152,23 @@ void loop() {
       delay(1000);
   }
 
-  // Check if data is ready
-  if (vl53l5cx.isDataReady()) {
-    // Check INT pin BEFORE reading (should be LOW if threshold triggered)
-    bool intFired = (digitalRead(INT_PIN) == LOW);
+  // With thresholds enabled, INT goes LOW ONLY on threshold crossings.
+  // Check the pin BEFORE any I2C -- isDataReady() may clear the latch.
+  bool intLow = (digitalRead(INT_PIN) == LOW);
+
+  // Use INT as primary trigger; fall back to isDataReady for non-trigger frames
+  if (!intLow && !vl53l5cx.isDataReady()) {
+    delay(5);
+    return;
+  }
+
+  {
+    bool intFired = intLow;
     if (intFired) {
       intFiredCount++;
     }
 
-    // Read the data
+    // Read the data (also clears INT)
     vl53l5cx.getRangingData(&results);
 
     // Check zone 0 distance
