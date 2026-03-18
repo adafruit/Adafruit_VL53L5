@@ -336,3 +336,111 @@ bool Adafruit_VL53L5CX::setAddress(uint8_t new_address) {
   _config.platform.i2c_dev = _i2c_dev;
   return _i2c_dev->begin();
 }
+
+/**************************************************************************/
+/*                      Detection Thresholds                              */
+/**************************************************************************/
+
+/*!
+ * @brief Enable or disable detection thresholds
+ * @param enable true to enable, false to disable
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setDetectionThresholdsEnable(bool enable) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_set_detection_thresholds_enable(&_config, enable ? 1 : 0) ==
+          VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Check if detection thresholds are enabled
+ * @return true if enabled, false if disabled or on error
+ */
+bool Adafruit_VL53L5CX::getDetectionThresholdsEnable(void) {
+  if (!_initialized) {
+    return false;
+  }
+  uint8_t enabled = 0;
+  if (vl53l5cx_get_detection_thresholds_enable(&_config, &enabled) !=
+      VL53L5CX_STATUS_OK) {
+    return false;
+  }
+  return (enabled == 1);
+}
+
+/*!
+ * @brief Set detection thresholds configuration
+ * @param thresholds Pointer to array of 64 VL53L5CX_DetectionThresholds
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setDetectionThresholds(
+    VL53L5CX_DetectionThresholds *thresholds) {
+  if (!_initialized || !thresholds) {
+    return false;
+  }
+  return (vl53l5cx_set_detection_thresholds(&_config, thresholds) ==
+          VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Get detection thresholds configuration
+ * @param thresholds Pointer to array of 64 VL53L5CX_DetectionThresholds to fill
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::getDetectionThresholds(
+    VL53L5CX_DetectionThresholds *thresholds) {
+  if (!_initialized || !thresholds) {
+    return false;
+  }
+  return (vl53l5cx_get_detection_thresholds(&_config, thresholds) ==
+          VL53L5CX_STATUS_OK);
+}
+
+/**************************************************************************/
+/*                        Motion Indicator                                */
+/**************************************************************************/
+
+/*!
+ * @brief Initialize motion indicator with specified resolution
+ * @param resolution VL53L5CX_RESOLUTION_4X4 (16) or VL53L5CX_RESOLUTION_8X8
+ * (64)
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::initMotionIndicator(uint8_t resolution) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_motion_indicator_init(&_config, &_motion_config,
+                                         resolution) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Set motion indicator distance range
+ * @param min_mm Minimum distance in mm (400-4000)
+ * @param max_mm Maximum distance in mm (400-4000)
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setMotionDistance(uint16_t min_mm, uint16_t max_mm) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_motion_indicator_set_distance_motion(
+              &_config, &_motion_config, min_mm, max_mm) == VL53L5CX_STATUS_OK);
+}
+
+/*!
+ * @brief Set motion indicator resolution
+ * @param resolution VL53L5CX_RESOLUTION_4X4 (16) or VL53L5CX_RESOLUTION_8X8
+ * (64)
+ * @return true on success
+ */
+bool Adafruit_VL53L5CX::setMotionResolution(uint8_t resolution) {
+  if (!_initialized) {
+    return false;
+  }
+  return (vl53l5cx_motion_indicator_set_resolution(&_config, &_motion_config,
+                                                   resolution) ==
+          VL53L5CX_STATUS_OK);
+}

@@ -21,6 +21,8 @@
 #include <Wire.h>
 
 #include "vl53l5cx_api.h"
+#include "vl53l5cx_plugin_detection_thresholds.h"
+#include "vl53l5cx_plugin_motion_indicator.h"
 
 #define VL53L5CX_DEFAULT_ADDRESS 0x29 ///< Default I2C address (7-bit)
 
@@ -63,12 +65,24 @@ public:
 
   bool setAddress(uint8_t new_address);
 
+  // Detection Thresholds
+  bool setDetectionThresholdsEnable(bool enable);
+  bool getDetectionThresholdsEnable(void);
+  bool setDetectionThresholds(VL53L5CX_DetectionThresholds *thresholds);
+  bool getDetectionThresholds(VL53L5CX_DetectionThresholds *thresholds);
+
+  // Motion Indicator
+  bool initMotionIndicator(uint8_t resolution);
+  bool setMotionDistance(uint16_t min_mm, uint16_t max_mm);
+  bool setMotionResolution(uint8_t resolution);
+
   VL53L5CX_Configuration *getConfig(void) { return &_config; }
 
 private:
   Adafruit_I2CDevice *_i2c_dev = nullptr;
   VL53L5CX_Configuration _config;
   bool _initialized = false;
+  VL53L5CX_Motion_Configuration _motion_config;
 };
 
 #endif // ADAFRUIT_VL53L5CX_H
