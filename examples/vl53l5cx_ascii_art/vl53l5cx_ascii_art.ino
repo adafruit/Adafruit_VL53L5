@@ -17,30 +17,9 @@
 Adafruit_VL53L5CX vl53l5cx;
 VL53L5CX_ResultsData results;
 
-// --- ASCII density ramps (space = far, last char = close) ---
-// Pick one by changing RAMP_SELECT (0-5)
-#define RAMP_SELECT 0
-
-#if RAMP_SELECT == 0
-// 10-char classic
-const char densityRamp[] = " .:-=+*#%@";
-#elif RAMP_SELECT == 1
-// 24-char fine gradient (Paul Bourke subset)
-const char densityRamp[] = " .`^,:;!i~+][)(zU#MW&%B@";
-#elif RAMP_SELECT == 2
-// 16-char hex-density: shows relative distance as hex digit
-const char densityRamp[] = " 123456789ABCDEF";
-#elif RAMP_SELECT == 3
-// 10-char dot-matrix: chunky, high contrast
-const char densityRamp[] = " .oO08@#MW";
-#elif RAMP_SELECT == 4
-// 7-char minimal: for tiny terminals
-const char densityRamp[] = " .:+#@";
-#elif RAMP_SELECT == 5
-// 70-char full Paul Bourke ramp: maximum smoothness
+// 70-char Paul Bourke density ramp: maximum smoothness
 const char densityRamp[] =
     " .'`^\",:;Il!i><~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
-#endif
 
 const int rampLength = sizeof(densityRamp) - 1; // auto-calculated
 const int minDist = 200;  // mm - closest (maps to last char)
