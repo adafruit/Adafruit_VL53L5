@@ -68,10 +68,10 @@ void loop() {
       uint8_t width = (resolution == 16) ? 4 : 8;
 
       // Print distance array
-      // The ST library returns data transposed from zone mapping in datasheet
-      // Print with increasing y, decreasing x to reflect reality
-      for (int y = 0; y <= width * (width - 1); y += width) {
-        for (int x = width - 1; x >= 0; x--) {
+      // Zone order from ST library: index = col + row*width
+      // Print with decreasing x (left-right mirror) and increasing y
+      for (int x = width - 1; x >= 0; x--) {
+        for (int y = 0; y <= width * (width - 1); y += width) {
           int idx = x + y;
           Serial.print("\t");
           Serial.print(results.distance_mm[idx]);
