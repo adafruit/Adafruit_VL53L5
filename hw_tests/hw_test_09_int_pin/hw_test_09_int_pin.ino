@@ -43,7 +43,7 @@ void setup() {
   pinMode(INT_PIN, INPUT_PULLUP);
 
   Serial.println(F("   Initializing sensor..."));
-  if (!vl53l5cx.begin(0x29, &Wire, 1000000)) {
+  if (!vl53l5cx.begin(0x29, &Wire, 400000)) {
     Serial.println(F("Init failed!"));
     while (1)
       delay(10);

@@ -47,7 +47,7 @@ void setup() {
 
   // Test 2: begin()
   Serial.println(F("   Initializing sensor (up to 10s)..."));
-  bool initOk = vl53l5cx.begin(0x29, &Wire, 1000000);
+  bool initOk = vl53l5cx.begin(0x29, &Wire, 400000);
   report("2. begin() succeeds", initOk);
   if (!initOk) {
     Serial.println(F("Init failed, cannot continue."));
