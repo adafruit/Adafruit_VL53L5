@@ -328,17 +328,38 @@ bool Adafruit_VL53L5CX::setAddress(uint8_t new_address) {
   if (!_initialized) {
     return false;
   }
-  // ST driver uses 8-bit address internally
-  if (vl53l5cx_set_i2c_address(&_config, new_address << 1) !=
-      VL53L5CX_STATUS_OK) {
+  // Bypass vl53l5cx_set_i2c_address() — the ST driver updates
+  // platform.address mid-sequence but our BusIO i2c_dev still
+  // points to the old address, so the final page-select write fails.
+  // Do the register writes directly with the OLD device first.
+  uint8_t buf[3];
+  // Set page 0
+  buf[0] = 0x7F;
+  buf[1] = 0xFF;
+  buf[2] = 0x00;
+  if (!_i2c_dev->write(buf, 3)) {
     return false;
   }
-  // Update our I2C device to new address
+  // Write new 7-bit address to register 0x0004
+  buf[0] = 0x00;
+  buf[1] = 0x04;
+  buf[2] = new_address;
+  if (!_i2c_dev->write(buf, 3)) {
+    return false;
+  }
+  // Sensor is now at new_address — switch our I2C device
   delete _i2c_dev;
   _i2c_dev = new Adafruit_I2CDevice(new_address, &Wire);
   _config.platform.address = new_address;
   _config.platform.i2c_dev = _i2c_dev;
-  return _i2c_dev->begin();
+  if (!_i2c_dev->begin()) {
+    return false;
+  }
+  // Set page 2 at the new address
+  buf[0] = 0x7F;
+  buf[1] = 0xFF;
+  buf[2] = 0x02;
+  return _i2c_dev->write(buf, 3);
 }
 
 /**************************************************************************/
