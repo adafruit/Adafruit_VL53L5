@@ -20,20 +20,25 @@ void setup() {
   while (!Serial)
     delay(10);
 
-  Serial.println("Adafruit VL53L5CX simpletest");
-  Serial.println("============================");
+  Serial.println(F("Adafruit VL53L5CX simpletest"));
+  Serial.println(F("============================"));
 
-  // Or use 400000 for 400kHz if 1MHz is unstable
-
-  Serial.println("Initializing sensor... (this can take up to 10 seconds)");
+  Serial.print(F("I2C address: 0x"));
+  Serial.println(VL53L5CX_DEFAULT_ADDRESS, HEX);
+  Serial.print(F("I2C bus: Wire, clock: 400 kHz"));
+  Serial.println();
+  Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));
 
   if (!vl53l5cx.begin()) {
-    Serial.println("Failed to initialize VL53L5CX sensor!");
+    Serial.println(F("Failed to initialize VL53L5CX sensor!"));
     while (1)
       delay(10);
   }
 
-  Serial.println("Sensor initialized!");
+  Serial.print(F("Sensor initialized! Device ID: 0x"));
+  Serial.print(vl53l5cx.getDeviceID(), HEX);
+  Serial.print(F(", Revision: 0x"));
+  Serial.println(vl53l5cx.getRevisionID(), HEX);
 
   // Set 8x8 resolution (64 zones)
   if (!vl53l5cx.setResolution(64)) {

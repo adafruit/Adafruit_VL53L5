@@ -52,15 +52,20 @@ bool Adafruit_VL53L5CX::begin(uint8_t address, TwoWire* wire,
   _config.platform.address = address;
   _config.platform.i2c_dev = _i2c_dev;
 
-  // Check sensor is alive
+  // Check sensor is alive (reads page-0 device ID: 0xF0 for both L5 and L7)
   uint8_t isAlive = 0;
-  uint8_t status = vl53l5cx_is_alive(&_config, &isAlive);
-  if (status != VL53L5CX_STATUS_OK || !isAlive) {
+  uint8_t st = vl53l5cx_is_alive(&_config, &isAlive);
+  if (st != VL53L5CX_STATUS_OK || !isAlive) {
     return false;
   }
+  // Read device and revision IDs from page 0
+  WrByte(&(_config.platform), 0x7fff, 0x00);
+  RdByte(&(_config.platform), 0, &_device_id);
+  RdByte(&(_config.platform), 1, &_revision_id);
+  WrByte(&(_config.platform), 0x7fff, 0x02);
 
   // Initialize the sensor (loads firmware, takes ~10 seconds!)
-  status = vl53l5cx_init(&_config);
+  uint8_t status = vl53l5cx_init(&_config);
   if (status != VL53L5CX_STATUS_OK) {
     return false;
   }

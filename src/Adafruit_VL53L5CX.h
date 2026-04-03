@@ -26,6 +26,7 @@
 #include "vl53l5cx_plugin_xtalk.h"
 
 #define VL53L5CX_DEFAULT_ADDRESS 0x29 ///< Default I2C address (7-bit)
+#define VL53L5CX_DEVICE_ID 0xF0 ///< Device ID from page 0
 
 /*!
  * @brief Class for VL53L5CX ToF sensor
@@ -67,6 +68,9 @@ class Adafruit_VL53L5CX {
 
   bool setAddress(uint8_t new_address);
 
+  uint8_t getDeviceID(void) { return _device_id; }     ///< Get page-0 device ID
+  uint8_t getRevisionID(void) { return _revision_id; } ///< Get page-0 revision ID
+
   // Detection Thresholds
   bool setDetectionThresholdsEnable(bool enable);
   bool getDetectionThresholdsEnable(void);
@@ -89,6 +93,10 @@ class Adafruit_VL53L5CX {
   VL53L5CX_Configuration* getConfig(void) {
     return &_config;
   }
+
+ protected:
+  uint8_t _device_id = 0;    ///< Device ID read at begin()
+  uint8_t _revision_id = 0;  ///< Revision ID read at begin()
 
  private:
   Adafruit_I2CDevice* _i2c_dev = nullptr;
