@@ -76,8 +76,8 @@ void setup() {
     Serial.println(F(" ms"));
 
     // Interval must be at least the integration time
-    snprintf(label, sizeof(label), "%d. %lu ms interval >= integ time",
-             testNum, (unsigned long)ms);
+    snprintf(label, sizeof(label), "%d. %lu ms interval >= integ time", testNum,
+             (unsigned long)ms);
     report(label, intervals[i] >= (float)ms * 0.8);
     testNum++;
   }
@@ -137,7 +137,8 @@ void setup() {
   Serial.print(F("   Sigma at 100ms: "));
   Serial.print(sigma_long, 1);
   Serial.println(F(" mm"));
-  Serial.println(F("   (sigma comparison is informational — environment dependent)"));
+  Serial.println(
+      F("   (sigma comparison is informational — environment dependent)"));
 
   // Summary
   Serial.println();
@@ -154,7 +155,7 @@ void loop() {
   delay(1000);
 }
 
-void report(const char *name, bool ok) {
+void report(const char* name, bool ok) {
   Serial.print(name);
   if (ok) {
     Serial.println(F(" ... PASSED"));
@@ -193,7 +194,7 @@ float measureFrameInterval(uint8_t numFrames) {
   return (float)(millis() - start) / numFrames;
 }
 
-bool waitAndRead(VL53L5CX_ResultsData *results) {
+bool waitAndRead(VL53L5CX_ResultsData* results) {
   unsigned long start = millis();
   while (millis() - start < 5000) {
     if (vl53l5cx.isDataReady()) {
@@ -204,7 +205,7 @@ bool waitAndRead(VL53L5CX_ResultsData *results) {
   return false;
 }
 
-float avgSigma(VL53L5CX_ResultsData *results, uint8_t zones) {
+float avgSigma(VL53L5CX_ResultsData* results, uint8_t zones) {
   uint32_t sum = 0;
   for (uint8_t i = 0; i < zones; i++) {
     sum += results->range_sigma_mm[i];

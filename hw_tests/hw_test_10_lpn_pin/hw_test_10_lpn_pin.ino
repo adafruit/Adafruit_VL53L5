@@ -19,7 +19,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 #ifdef ESP32
 #define LPN_PIN 32
 #else

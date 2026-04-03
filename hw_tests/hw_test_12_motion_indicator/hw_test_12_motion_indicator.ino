@@ -17,7 +17,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 Adafruit_VL53L5CX vl53l5cx;
 VL53L5CX_ResultsData results;
 
@@ -31,7 +30,6 @@ void setup() {
 
   Serial.println(F("=== HW Test 12: Motion Indicator ==="));
   Serial.println();
-
 
   Serial.println(F("   Initializing sensor..."));
   if (!vl53l5cx.begin(0x29, &Wire, 400000)) {

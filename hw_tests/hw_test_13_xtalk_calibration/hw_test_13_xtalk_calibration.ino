@@ -21,7 +21,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 Adafruit_VL53L5CX vl53l5cx;
 uint8_t xtalk_data[VL53L5CX_XTALK_BUFFER_SIZE];
 uint8_t xtalk_data_after[VL53L5CX_XTALK_BUFFER_SIZE];
@@ -36,7 +35,6 @@ void setup() {
 
   Serial.println(F("=== HW Test 13: Xtalk Calibration ==="));
   Serial.println();
-
 
   Serial.println(F("   Initializing sensor..."));
   if (!vl53l5cx.begin(0x29, &Wire, 400000)) {

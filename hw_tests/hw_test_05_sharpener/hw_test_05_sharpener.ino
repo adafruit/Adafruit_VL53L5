@@ -17,7 +17,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 Adafruit_VL53L5CX vl53l5cx;
 
 uint8_t passed = 0;
@@ -32,7 +31,6 @@ void setup() {
 
   Serial.println(F("=== HW Test 05: Sharpener ==="));
   Serial.println();
-
 
   Serial.println(F("   Initializing sensor..."));
   if (!vl53l5cx.begin(0x29, &Wire, 400000)) {

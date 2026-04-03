@@ -18,7 +18,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 #ifdef ESP32
 #define INT_PIN 14
 #else

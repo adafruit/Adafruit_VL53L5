@@ -236,7 +236,7 @@ void wedgeI2CBus() {
   Serial.println(digitalRead(MY_SCL) ? F("HIGH") : F("LOW"));
 }
 
-void report(const char *name, bool ok) {
+void report(const char* name, bool ok) {
   Serial.print(name);
   if (ok) {
     Serial.println(F(" ... PASSED"));
@@ -263,7 +263,7 @@ bool i2cPresent(uint8_t addr) {
   return (Wire.endTransmission() == 0);
 }
 
-bool waitAndRead(VL53L5CX_ResultsData *results) {
+bool waitAndRead(VL53L5CX_ResultsData* results) {
   unsigned long start = millis();
   while (millis() - start < 5000) {
     if (vl53l5cx.isDataReady()) {

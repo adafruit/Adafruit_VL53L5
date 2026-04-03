@@ -109,8 +109,7 @@ void setup() {
   Serial.print(F("   CONTINUOUS 15Hz/5ms integ: "));
   Serial.print(contInterval, 1);
   Serial.println(F(" ms (expect ~67ms)"));
-  report("7. CONTINUOUS timing ~67ms",
-         contInterval > 45 && contInterval < 90);
+  report("7. CONTINUOUS timing ~67ms", contInterval > 45 && contInterval < 90);
 
   // Test 8: AUTONOMOUS with 100ms integration at 5 Hz
   // Frame interval should be ~200ms (driven by frequency)
@@ -154,8 +153,7 @@ void setup() {
   Serial.print(F("   AUTONOMOUS 10Hz/200ms integ: "));
   Serial.print(autoLong, 1);
   Serial.println(F(" ms (expect >= 200ms)"));
-  report("10. AUTONOMOUS integ exceeds period",
-         autoLong > 160);
+  report("10. AUTONOMOUS integ exceeds period", autoLong > 160);
 
   // Summary
   Serial.println();
@@ -172,7 +170,7 @@ void loop() {
   delay(1000);
 }
 
-void report(const char *name, bool ok) {
+void report(const char* name, bool ok) {
   Serial.print(name);
   if (ok) {
     Serial.println(F(" ... PASSED"));
@@ -183,7 +181,7 @@ void report(const char *name, bool ok) {
   }
 }
 
-uint8_t countValid(VL53L5CX_ResultsData *results, uint8_t zones) {
+uint8_t countValid(VL53L5CX_ResultsData* results, uint8_t zones) {
   uint8_t count = 0;
   for (uint8_t i = 0; i < zones; i++) {
     if (results->distance_mm[i] > 0 && results->distance_mm[i] < 4000)
@@ -192,7 +190,7 @@ uint8_t countValid(VL53L5CX_ResultsData *results, uint8_t zones) {
   return count;
 }
 
-bool waitAndRead(VL53L5CX_ResultsData *results) {
+bool waitAndRead(VL53L5CX_ResultsData* results) {
   unsigned long start = millis();
   while (millis() - start < 5000) {
     if (vl53l5cx.isDataReady()) {

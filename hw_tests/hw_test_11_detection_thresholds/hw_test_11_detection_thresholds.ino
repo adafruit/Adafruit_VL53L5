@@ -21,7 +21,6 @@
 
 #include <Adafruit_VL53L5CX.h>
 
-
 Adafruit_VL53L5CX vl53l5cx;
 VL53L5CX_ResultsData results;
 VL53L5CX_DetectionThresholds thresholds[VL53L5CX_NB_THRESHOLDS];
@@ -36,7 +35,6 @@ void setup() {
 
   Serial.println(F("=== HW Test 11: Detection Thresholds ==="));
   Serial.println();
-
 
   Serial.println(F("   Initializing sensor..."));
   if (!vl53l5cx.begin(0x29, &Wire, 400000)) {

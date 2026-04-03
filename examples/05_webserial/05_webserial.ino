@@ -204,5 +204,3 @@ void outputFrame(void) {
 
   Serial.println(F("FRAME_END"));
 }
-
-
