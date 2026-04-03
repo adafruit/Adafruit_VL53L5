@@ -72,7 +72,25 @@ void loop() {
       Serial.println(F("==========================\n"));
 
       // Print the 8x8 grid
-      printGrid();
+      const uint8_t width = 8;
+      for (int x = width - 1; x >= 0; x--) {
+        for (int y = width * (width - 1); y >= 0; y -= width) {
+          int idx = x + y;
+          uint8_t status = results.target_status[idx];
+
+          char c;
+          // Status 5 = valid, Status 9 = valid but sigma high
+          if (status == 5 || status == 9) {
+            c = distanceToChar(results.distance_mm[idx]);
+          } else {
+            c = '?'; // Invalid zone
+          }
+
+          Serial.print(c);
+          Serial.print(' ');
+        }
+        Serial.println();
+      }
 
       Serial.println();
     }
@@ -94,43 +112,6 @@ char distanceToChar(int16_t distance_mm) {
   int idx = (int)((long)(maxDist - distance_mm) * (rampLength - 1) /
                   (maxDist - minDist));
   return densityRamp[idx];
-}
-
-// Print the 8x8 grid with proper indexing
-void printGrid() {
-  const uint8_t width = 8;
-
-  for (int x = width - 1; x >= 0; x--) {
-    for (int y = width * (width - 1); y >= 0; y -= width) {
-      int idx = x + y;
-      uint8_t status = results.target_status[idx];
-
-      char c;
-      // Status 5 = valid, Status 9 = valid but sigma high
-      if (status == 5 || status == 9) {
-        c = distanceToChar(results.distance_mm[idx]);
-      } else {
-        c = '?'; // Invalid zone
-      }
-
-      Serial.print(c);
-      Serial.print(' '); // Space between chars for square aspect ratio
-    }
-    Serial.println();
-  }
-}
-
-// Print a dynamic legend showing the ramp and distance range
-void printLegend() {
-  Serial.print(F("Ramp: ["));
-  for (int i = rampLength - 1; i >= 0; i--) {
-    Serial.print(densityRamp[i]);
-  }
-  Serial.print(F("] close<"));
-  Serial.print(minDist);
-  Serial.print(F("mm ... "));
-  Serial.print(maxDist);
-  Serial.println(F("mm>far  [?]=invalid"));
 }
 
 void halt(const __FlashStringHelper* msg) {
