@@ -31,10 +31,7 @@ void setup() {
     halt(F("Failed to initialize VL53L5CX sensor!"));
   }
 
-  Serial.print(F("Sensor initialized! Device ID: 0x"));
-  Serial.print(vl53l5cx.getDeviceID(), HEX);
-  Serial.print(F(", Revision: 0x"));
-  Serial.println(vl53l5cx.getRevisionID(), HEX);
+  Serial.println(F("Sensor initialized!"));
 
   // Set 8x8 resolution (64 zones)
   if (!vl53l5cx.setResolution(64)) {
