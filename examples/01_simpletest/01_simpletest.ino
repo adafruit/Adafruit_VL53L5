@@ -62,7 +62,10 @@ void loop() {
     if (vl53l5cx.getRangingData(&results)) {
       // Get resolution to determine grid size
       uint8_t resolution = vl53l5cx.getResolution();
-      uint8_t width = (resolution == 16) ? 4 : 8;
+      uint8_t width = 8;
+      if (resolution == 16) {
+        width = 4;
+      }
 
       // Print distance array
       // Zone order from ST library: index = col + row*width
