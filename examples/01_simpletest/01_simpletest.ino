@@ -26,9 +26,7 @@ void setup() {
   Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));
 
   if (!vl53l5cx.begin()) {
-    Serial.println(F("Failed to initialize VL53L5CX sensor!"));
-    while (1)
-      delay(10);
+    halt(F("Failed to initialize VL53L5CX sensor!"));
   }
 
   Serial.print(F("Sensor initialized! Device ID: 0x"));
@@ -38,26 +36,24 @@ void setup() {
 
   // Set 8x8 resolution (64 zones)
   if (!vl53l5cx.setResolution(64)) {
-    Serial.println("Failed to set resolution!");
+    halt(F("Failed to set resolution!"));
   }
 
   // Set ranging frequency to 15 Hz
   if (!vl53l5cx.setRangingFrequency(15)) {
-    Serial.println("Failed to set ranging frequency!");
+    halt(F("Failed to set ranging frequency!"));
   }
 
   // Start ranging
   if (!vl53l5cx.startRanging()) {
-    Serial.println("Failed to start ranging!");
-    while (1)
-      delay(10);
+    halt(F("Failed to start ranging!"));
   }
 
-  Serial.print("Resolution: ");
+  Serial.print(F("Resolution: "));
   Serial.println(vl53l5cx.getResolution());
-  Serial.print("Ranging frequency: ");
+  Serial.print(F("Ranging frequency: "));
   Serial.print(vl53l5cx.getRangingFrequency());
-  Serial.println(" Hz");
+  Serial.println(F(" Hz"));
   Serial.println();
 }
 
@@ -83,4 +79,10 @@ void loop() {
   }
 
   delay(5); // Small delay between polling
+}
+
+void halt(const __FlashStringHelper* msg) {
+  Serial.println(msg);
+  while (1)
+    delay(10);
 }
