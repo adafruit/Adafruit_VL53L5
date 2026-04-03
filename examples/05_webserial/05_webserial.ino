@@ -39,29 +39,26 @@ void setup() {
   Serial.println(F("======================="));
   Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));
 
-  if (!vl53l5cx.begin()) {
-    Serial.println(F("ERROR: Failed to initialize VL53L5CX sensor!"));
-    while (1)
-      delay(10);
+  // Initialize with I2C address 0x29, Wire bus, 400kHz clock
+  if (!vl53l5cx.begin(VL53L5CX_DEFAULT_ADDRESS, &Wire, 400000)) {
+    halt(F("ERROR: Failed to initialize VL53L5CX sensor!"));
   }
 
   Serial.println(F("Sensor initialized!"));
 
   // Set default 8x8 resolution (64 zones)
   if (!vl53l5cx.setResolution(currentResolution)) {
-    Serial.println(F("ERROR: Failed to set resolution!"));
+    halt(F("ERROR: Failed to set resolution!"));
   }
 
   // Set default ranging frequency
   if (!vl53l5cx.setRangingFrequency(currentRate)) {
-    Serial.println(F("ERROR: Failed to set ranging frequency!"));
+    halt(F("ERROR: Failed to set ranging frequency!"));
   }
 
   // Start ranging
   if (!vl53l5cx.startRanging()) {
-    Serial.println(F("ERROR: Failed to start ranging!"));
-    while (1)
-      delay(10);
+    halt(F("ERROR: Failed to start ranging!"));
   }
 
   Serial.print(F("Resolution: "));
@@ -203,4 +200,10 @@ void outputFrame(void) {
   }
 
   Serial.println(F("FRAME_END"));
+}
+
+void halt(const __FlashStringHelper* msg) {
+  Serial.println(msg);
+  while (1)
+    delay(10);
 }
