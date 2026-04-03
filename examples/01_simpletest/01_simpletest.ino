@@ -10,7 +10,6 @@
  */
 
 #include <Adafruit_VL53L5CX.h>
-#include <Wire.h>
 
 Adafruit_VL53L5CX vl53l5cx;
 VL53L5CX_ResultsData results;
