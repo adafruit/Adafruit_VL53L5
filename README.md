@@ -17,8 +17,16 @@ Arduino library for the ST VL53L5CX 8x8 multizone Time-of-Flight sensor. Support
 - LPn pin support
 
 **Hardware Requirements**
-- Requires an ARM-class MCU (ESP32, SAMD, RP2040, nRF52840, etc.)
-- Firmware upload on power-on requires ~84KB
+
+> **This sensor will NOT work on AVR boards (Arduino Uno, Mega, etc.).**
+
+The VL53L5CX stores its firmware in volatile RAM. Every time the sensor powers on, the host MCU must upload an ~84KB firmware blob over I2C before the sensor can range. This means:
+
+- **You need an ARM-class MCU** with enough flash and RAM — ESP32, SAMD21/51, RP2040, nRF52840, STM32, etc.
+- **AVR chips cannot compile this library.** The firmware blob alone exceeds AVR flash and array initializer limits.
+- **First `begin()` call takes up to 10 seconds** while firmware uploads. This is normal — it only happens once after power-on.
+- **The sensor retains firmware across soft resets** (as long as 3.3V stays up). Only a full power cycle requires re-upload.
+- **I2C clock speed matters.** 400kHz is the default; 1MHz works on most boards and cuts upload time roughly in half.
 
 **Dependencies**
 - Adafruit BusIO
