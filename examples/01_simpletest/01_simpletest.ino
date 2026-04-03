@@ -25,7 +25,7 @@ void setup() {
 
   Serial.println(F("Initializing sensor... (this can take up to 10 seconds)"));
 
-  if (!vl53l5cx.begin()) {
+  if (!vl53l5cx.begin(VL53L5CX_DEFAULT_ADDRESS, &Wire, 400000)) {
     halt(F("Failed to initialize VL53L5CX sensor!"));
   }
 
